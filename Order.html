@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Brew & Bean Café</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body { background:#f8f5f2; }
+
+/* Hero */
+.hero {
+    background:url('https://images.unsplash.com/photo-1509042239860-f550ce710b93') center/cover;
+    height:250px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-size:32px;
+}
+
+/* Cards */
+.card { transition:0.3s; }
+.card:hover { transform:scale(1.05); }
+
+/* Sections */
+.section {
+    background:white;
+    padding:20px;
+    margin:20px 0;
+    border-radius:10px;
+}
+
+/* Cart */
+.cart-box {
+    background:white;
+    padding:15px;
+    border-radius:10px;
+}
+
+/* QR */
+.qr-popup {
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.7);
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+.qr-box {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+<div class="container-fluid">
+<span class="navbar-brand">☕ Brew & Bean Café</span>
+</div>
+</nav>
+
+<div class="hero">Premium Coffee Experience</div>
+
+<div class="container">
+
+<!-- ABOUT -->
+<div class="section">
+<h3>About Brew & Bean</h3>
+<p>
+Brew & Bean Café is a modern coffee shop offering handcrafted beverages, fresh snacks,
+and a cozy environment. Our goal is to provide a personalized coffee experience where
+customers can customize their drinks and enjoy high-quality ingredients.
+</p>
+</div>
+
+<!-- SEARCH -->
+<input type="text" id="search" class="form-control mb-3" placeholder="🔍 Search items..." onkeyup="searchItems()">
+
+<div class="row">
+
+<!-- MENU -->
+<div class="col-md-8">
+<div class="row" id="menu"></div>
+
+<!-- ADD-ONS -->
+<div class="section">
+<h4>Customize Your Order (Add-ons)</h4>
+
+<input type="checkbox" class="addon" value="20"> Extra Shot (₹20)<br>
+<input type="checkbox" class="addon" value="30"> Almond Milk (₹30)<br>
+<input type="checkbox" class="addon" value="25"> Chocolate Syrup (₹25)<br>
+<input type="checkbox" class="addon" value="15"> Caramel Drizzle (₹15)<br>
+
+</div>
+
+</div>
+
+<!-- CART -->
+<div class="col-md-4">
+<h4>🛒 Your Cart</h4>
+
+<div class="cart-box" id="cart">Cart is empty</div>
+
+<h5 class="mt-2" id="total">Total: ₹0</h5>
+
+<select id="payment" class="form-control mt-2">
+<option value="">Select Payment</option>
+<option>UPI</option>
+<option>PhonePe</option>
+<option>Debit Card</option>
+</select>
+
+<button class="btn btn-success mt-2 w-100" onclick="payNow()">Pay Now</button>
+
+<div id="status" class="mt-2"></div>
+</div>
+
+</div>
+</div>
+
+<!-- QR -->
+<div class="qr-popup" id="qrPopup">
+<div class="qr-box text-center">
+<h4>Scan & Pay</h4>
+<img src="C:\Users\ASUS\OneDrive\Desktop\turu1.jpeg" height="250" width="300">
+<br><br>
+<button class="btn btn-danger" onclick="closeQR()">Close</button>
+</div>
+</div>
+
+<script>
+
+// ITEMS
+const items = [
+{name:"Espresso", price:100},
+{name:"Latte", price:150},
+{name:"Cappuccino", price:180},
+{name:"Americano", price:120},
+{name:"Mocha", price:200},
+{name:"Cold Coffee", price:160},
+{name:"Iced Latte", price:170},
+{name:"Burger", price:150},
+{name:"Pizza", price:200},
+{name:"Sandwich", price:120},
+{name:"Fries", price:90},
+{name:"Brownie", price:110},
+{name:"Cheesecake", price:200},
+{name:"Donut", price:80},
+{name:"Croissant", price:140}
+];
+
+let cart = {};
+let total = 0;
+
+// LOAD MENU
+function loadMenu(filtered = items) {
+let html = "";
+
+filtered.forEach((item, index) => {
+html += `
+<div class="col-md-4 mb-3">
+<div class="card p-3">
+<h5>${item.name}</h5>
+<p>₹${item.price}</p>
+<button class="btn btn-dark" onclick="addToCart(${index})">Add</button>
+<button class="btn btn-danger mt-2" onclick="removeFromCart(${index})">Remove</button>
+</div>
+</div>`;
+});
+
+document.getElementById("menu").innerHTML = html;
+}
+
+window.onload = () => loadMenu();
+
+// SEARCH
+function searchItems() {
+let q = document.getElementById("search").value.toLowerCase();
+let filtered = items.filter(i => i.name.toLowerCase().includes(q));
+loadMenu(filtered);
+}
+
+// CART
+function addToCart(index) {
+let item = items[index];
+
+if (!cart[item.name]) cart[item.name] = {qty:0, price:item.price};
+cart[item.name].qty++;
+
+updateCart();
+}
+
+function removeFromCart(index) {
+let item = items[index];
+
+if (cart[item.name]) {
+cart[item.name].qty--;
+if (cart[item.name].qty <= 0) delete cart[item.name];
+}
+updateCart();
+}
+
+function updateCart() {
+
+let html = "";
+total = 0;
+
+// Items total
+for (let item in cart) {
+let cost = cart[item].qty * cart[item].price;
+total += cost;
+html += `${item} x ${cart[item].qty} = ₹${cost}<br>`;
+}
+
+// Add-ons total
+let addons = document.getElementsByClassName("addon");
+let addonCost = 0;
+
+for (let i = 0; i < addons.length; i++) {
+if (addons[i].checked) {
+addonCost += parseInt(addons[i].value);
+}
+}
+
+if (addonCost > 0) {
+total += addonCost;
+html += `Add-ons = ₹${addonCost}<br>`;
+}
+
+if (!html) html = "Cart is empty";
+
+document.getElementById("cart").innerHTML = html;
+document.getElementById("total").innerHTML = "Total: ₹" + total;
+}
+
+// PAYMENT
+function payNow() {
+
+let method = document.getElementById("payment").value;
+
+if (total === 0) {
+alert("Cart is empty!");
+return;
+}
+
+if (!method) {
+alert("Select payment method!");
+return;
+}
+
+if (method === "UPI" || method === "PhonePe") {
+document.getElementById("qrPopup").style.display = "flex";
+} else {
+document.getElementById("status").innerHTML =
+"<b>Payment Successful via " + method + " ✅</b>";
+}
+}
+
+function closeQR() {
+document.getElementById("qrPopup").style.display = "none";
+document.getElementById("status").innerHTML =
+"<b>Payment Successful ✅</b>";
+}
+
+</script>
+
+</body>
+</html>
